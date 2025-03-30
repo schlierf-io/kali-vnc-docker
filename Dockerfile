@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     git \
     zip \
     unzip \
+    ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js and npm
@@ -53,7 +54,8 @@ RUN echo 'export PS1="\[\033[1;36m\]\u@\h\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]
 # Install Cursor AI
 RUN mkdir -p /home/kalidev/.local/share && \
     cd /home/kalidev/.local/share && \
-    curl -L https://download.cursor.sh/linux/appImage/x64 -o cursor.AppImage && \
+    update-ca-certificates && \
+    curl -Lk https://download.cursor.sh/linux/appImage/x64 -o cursor.AppImage && \
     chmod +x cursor.AppImage && \
     chown -R kalidev:kalidev /home/kalidev/.local
 
