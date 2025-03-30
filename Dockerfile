@@ -15,7 +15,17 @@ RUN apt-get update && apt-get install -y \
     mesa-utils \
     bash \
     bash-completion \
+    curl \
+    wget \
+    gnupg \
+    git \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create kalidev user and add to sudo group
 RUN useradd -m -s /bin/bash kalidev && \
@@ -29,6 +39,26 @@ RUN echo 'export PS1="\[\033[1;36m\]\u@\h\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]
     echo 'alias l="ls -l"' >> /home/kalidev/.bashrc && \
     echo 'source /etc/bash_completion' >> /home/kalidev/.bashrc && \
     chown kalidev:kalidev /home/kalidev/.bashrc
+
+# Install Cursor AI
+RUN mkdir -p /home/kalidev/.local/share && \
+    cd /home/kalidev/.local/share && \
+    curl -L https://download.cursor.sh/linux/appImage/x64 -o cursor.AppImage && \
+    chmod +x cursor.AppImage && \
+    chown -R kalidev:kalidev /home/kalidev/.local
+
+# Create desktop shortcut for Cursor
+RUN mkdir -p /home/kalidev/Desktop && \
+    echo "[Desktop Entry]\n\
+Name=Cursor AI\n\
+Comment=AI-first code editor\n\
+Exec=/home/kalidev/.local/share/cursor.AppImage\n\
+Icon=text-editor\n\
+Terminal=false\n\
+Type=Application\n\
+Categories=Development;IDE;" > /home/kalidev/Desktop/cursor.desktop && \
+    chmod +x /home/kalidev/Desktop/cursor.desktop && \
+    chown -R kalidev:kalidev /home/kalidev/Desktop
 
 # Create VNC configuration directory and set up X11 for kalidev
 RUN mkdir -p /home/kalidev/.config/tigervnc && \
