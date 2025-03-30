@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     git \
+    zip \
+    unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js and npm
@@ -32,6 +34,14 @@ RUN useradd -m -s /bin/bash kalidev && \
     echo "kalidev:kalidev" | chpasswd && \
     adduser kalidev sudo && \
     echo "kalidev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Install SDKMAN! for kalidev user
+USER kalidev
+RUN curl -s "https://get.sdkman.io" | bash && \
+    echo 'source "/home/kalidev/.sdkman/bin/sdkman-init.sh"' >> /home/kalidev/.bashrc && \
+    bash -c 'source "/home/kalidev/.sdkman/bin/sdkman-init.sh"'
+
+USER root
 
 # Set up bash configuration for kalidev
 RUN echo 'export PS1="\[\033[1;36m\]\u@\h\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ "' >> /home/kalidev/.bashrc && \
