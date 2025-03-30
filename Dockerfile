@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y \
     x11-xserver-utils \
     xvfb \
     mesa-utils \
+    bash \
+    bash-completion \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create kalidev user and add to sudo group
@@ -20,6 +22,13 @@ RUN useradd -m -s /bin/bash kalidev && \
     echo "kalidev:kalidev" | chpasswd && \
     adduser kalidev sudo && \
     echo "kalidev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Set up bash configuration for kalidev
+RUN echo 'export PS1="\[\033[1;36m\]\u@\h\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ "' >> /home/kalidev/.bashrc && \
+    echo 'alias ll="ls -la"' >> /home/kalidev/.bashrc && \
+    echo 'alias l="ls -l"' >> /home/kalidev/.bashrc && \
+    echo 'source /etc/bash_completion' >> /home/kalidev/.bashrc && \
+    chown kalidev:kalidev /home/kalidev/.bashrc
 
 # Create VNC configuration directory and set up X11 for kalidev
 RUN mkdir -p /home/kalidev/.config/tigervnc && \
