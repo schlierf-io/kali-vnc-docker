@@ -51,25 +51,19 @@ RUN echo 'export PS1="\[\033[1;36m\]\u@\h\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]
     echo 'source /etc/bash_completion' >> /home/kalidev/.bashrc && \
     chown kalidev:kalidev /home/kalidev/.bashrc
 
-# Install Cursor AI
-RUN mkdir -p /home/kalidev/.local/share && \
-    cd /home/kalidev/.local/share && \
-    update-ca-certificates && \
-    curl -Lk https://download.cursor.sh/linux/appImage/x64 -o cursor.AppImage && \
-    chmod +x cursor.AppImage && \
-    chown -R kalidev:kalidev /home/kalidev/.local
+# Create startup script for Cursor AI installation
+COPY install-cursor.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-cursor.sh
 
-# Create desktop shortcut for Cursor
+# Create desktop shortcut template
 RUN mkdir -p /home/kalidev/Desktop && \
-    echo "[Desktop Entry]\n\
+    echo '[Desktop Entry]\n\
 Name=Cursor AI\n\
-Comment=AI-first code editor\n\
 Exec=/home/kalidev/.local/share/cursor.AppImage\n\
-Icon=text-editor\n\
-Terminal=false\n\
 Type=Application\n\
-Categories=Development;IDE;" > /home/kalidev/Desktop/cursor.desktop && \
-    chmod +x /home/kalidev/Desktop/cursor.desktop && \
+Terminal=false\n\
+Categories=Development;IDE;\n\
+Icon=/home/kalidev/.local/share/cursor.png' > /home/kalidev/Desktop/cursor.desktop.template && \
     chown -R kalidev:kalidev /home/kalidev/Desktop
 
 # Create VNC configuration directory and set up X11 for kalidev
