@@ -81,6 +81,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sed \
     binutils \
     less \
+    nano \
     unzip \
     tar \
     torsocks \

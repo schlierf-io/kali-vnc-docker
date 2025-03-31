@@ -63,6 +63,31 @@ docker run -d --name kali-vnc-dev --gpus all -p 5901:5901 -p 4713:4713 --shm-siz
     - This flag is required for applications like Cursor due to FUSE limitations in containers
     - Extracts and runs AppImages without requiring FUSE support
 
+### Understanding FUSE and AppImages in Docker
+
+AppImages typically require FUSE (Filesystem in Userspace) to run. However, in Docker containers:
+
+1. Why FUSE is needed:
+   - AppImages are self-contained applications that mount themselves as filesystems
+   - FUSE allows these filesystem operations without root privileges
+   - Traditional AppImages create a virtual filesystem when executed
+
+2. Docker Container Limitations:
+   - FUSE requires special kernel capabilities
+   - Docker containers run with limited privileges by default
+   - Mounting filesystems inside containers poses security risks
+
+3. Our Solution:
+   - Use `--appimage-extract-and-run` flag
+   - This extracts the AppImage contents to a temporary directory
+   - Runs the application directly without mounting
+   - More secure and reliable in containerized environments
+
+4. When to use extraction:
+   - Always use `--appimage-extract-and-run` for AppImages in this container
+   - Examples: Cursor, and other AppImage-based applications
+   - No performance impact, just different execution method
+
 ### Node.js Environment
 - Global packages pre-installed:
   - yarn
@@ -87,14 +112,14 @@ Audio is supported through PulseAudio. For Windows hosts:
      
      a. `%APPDATA%\pulse\daemon.conf`:
      ```conf
+     daemonize = yes
      exit-idle-time = -1
      ```
 
      b. `%APPDATA%\pulse\default.pa`:
      ```conf
-     load-module module-native-protocol-tcp auth-anonymous=1
-     load-module module-esound-protocol-tcp auth-anonymous=1
      load-module module-waveout
+     load-module module-native-protocol-tcp auth-anonymous=1
      ```
 
 3. Start PulseAudio on Windows:
