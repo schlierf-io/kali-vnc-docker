@@ -59,6 +59,9 @@ docker run -d --name kali-vnc-dev --gpus all -p 5901:5901 -p 4713:4713 --shm-siz
   - Install new applications: `appman -i <package-name>`
   - List installed applications: `appman -l`
   - Update all applications: `appman -u`
+  - For AppImages in Docker: `appman -i --appimage-extract-and-run <package-name>`
+    - This flag is required for applications like Cursor due to FUSE limitations in containers
+    - Extracts and runs AppImages without requiring FUSE support
 
 ### Node.js Environment
 - Global packages pre-installed:
