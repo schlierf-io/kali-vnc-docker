@@ -1,28 +1,29 @@
 # Kali Linux VNC Docker Container
 
-This Docker container provides a Kali Linux environment with XFCE desktop accessible via VNC, featuring NVIDIA GPU support and development tools.
+A feature-rich Kali Linux container with VNC, development tools, and NVIDIA GPU support.
 
 ## Features
 
-- Kali Linux (Rolling Release)
-- XFCE Desktop Environment
-- TigerVNC Server
-- NVIDIA GPU Support with CUDA
+- Kali Linux desktop environment (XFCE)
+- VNC server for remote access
+- NVIDIA GPU support with CUDA toolkit
 - Development Tools:
-  - Node.js 20.x with npm, yarn, and pnpm
-  - Java 21 (Temurin) with Maven and Gradle
-  - Cursor AI IDE
-  - Git with Oh My Zsh
-- Audio Support via PulseAudio
-- Default user: `kalidev` with sudo access
-- Dynamic display scaling
+  - Node.js and npm (with global packages: yarn, pnpm)
+  - Java Development Kit (via SDKMAN!)
+  - Sublime Text 4
+  - JetBrains Toolbox
+  - Cursor AI IDE (via AppMan)
+  - Git and development essentials
+- ZSH with Oh My Zsh (theme: robbyrussell)
+- Audio support via PulseAudio
+- AppMan package manager for easy software installation
 
 ## Prerequisites
 
-- Docker with NVIDIA Container Toolkit installed
-- NVIDIA GPU with compatible drivers
-- VNC Viewer
-- PulseAudio (for audio support on Windows)
+- Docker installed and running
+- NVIDIA GPU with appropriate drivers (for GPU support)
+- NVIDIA Container Toolkit installed
+- VNC client installed on your system
 
 ## Quick Start
 
@@ -33,80 +34,87 @@ docker build -t kali-vnc .
 
 2. Run the container with GPU support:
 ```bash
-docker run -d --gpus all -p 5901:5901 -p 4713:4713 --name kali-vnc-dev kali-vnc
+docker run -d --name kali-vnc-dev --gpus all -p 5901:5901 -p 4713:4713 --shm-size 1g kali-vnc
 ```
 
-3. Connect using any VNC client:
-   - Address: `localhost:5901` or `127.0.0.1:5901`
-   - No VNC password required (SecurityTypes None)
-   - Color Depth: 24-bit
-   - Resolution: 1920x1080
+3. Connect using a VNC client:
+   - Host: localhost or 127.0.0.1
+   - Port: 5901
+   - Password: kalidev
 
 ## User Credentials
 
-- Username: `kalidev`
-- Password: `kalidev`
-- Sudo access: Yes (no password required)
+- Username: kalidev
+- Password: kalidev
 
 ## Development Environment
 
-### Node.js Development
-- Node.js 20.x with npm
-- Global package managers:
+### Text Editors and IDEs
+- **Sublime Text 4**: Modern text editor with extensive plugin support
+- **Cursor AI**: AI-powered IDE for enhanced development
+- **JetBrains Toolbox**: Install and manage JetBrains IDEs
+
+### Package Management
+- **AppMan**: Rootless package manager for easy software installation
+  - Install new applications: `appman -i <package-name>`
+  - List installed applications: `appman -l`
+  - Update all applications: `appman -u`
+
+### Node.js Environment
+- Global packages pre-installed:
   - yarn
   - pnpm
 
 ### Java Development
-- Java 21.0.6-tem (Temurin)
-- Build tools:
-  - Maven 3.9.9
-  - Gradle 8.13
-
-### Shell Environment
-- ZSH with Oh My Zsh
-- Theme: robbyrussell
-- Git integration
-- Custom aliases and configurations
+- SDKMAN! installed for Java version management
+- Access via: `source "$HOME/.sdkman/bin/sdkman-init.sh"`
 
 ## Audio Configuration
 
-1. Install PulseAudio on Windows host
-2. Configure PulseAudio to accept network connections
-3. Container automatically connects to host PulseAudio server
+Audio is supported through PulseAudio:
+1. Install PulseAudio on your host system
+2. Start the PulseAudio TCP server on your host:
+```bash
+pulseaudio --load=module-native-protocol-tcp --exit-idle-time=-1 --daemon
+```
 
 ## NVIDIA GPU Support
 
-The container includes:
+The container includes full NVIDIA GPU support with:
 - NVIDIA Container Toolkit
 - NVIDIA drivers
-- CUDA Toolkit
-- NVIDIA Settings
-- X11 configuration for GPU acceleration
+- CUDA toolkit
+- VA-API configuration for hardware acceleration
 
 To verify GPU support inside the container:
 ```bash
-nvidia-smi  # Check GPU status
-glxinfo | grep "OpenGL renderer"  # Check OpenGL renderer
+nvidia-smi
 ```
 
 ## VNC Client Settings
 
-For optimal performance with TigerVNC Viewer:
-- Picture Quality: High
-- Enable "Auto Scaling"
-- Compression Level: High
-- JPEG Quality: High
-- Enable "Use JPEG compression"
-- Color Level: Full (24-bit)
+For optimal performance:
+- Color depth: 24-bit
+- Encoding: Tight
+- Quality: High (when available)
+- Enable clipboard sharing
 
-## Security Note
+## Security Notes
 
-This container is configured without VNC encryption for development purposes. For production use, consider:
-- Enabling VNC encryption
-- Using SSH tunneling
-- Implementing additional security measures
-- Restricting port access
+1. VNC connection is not encrypted by default. For production use:
+   - Use SSH tunneling
+   - Set up VPN
+   - Change default passwords
+
+2. Container security:
+   - Runs as non-root user (kalidev)
+   - Limited system access
+   - Isolated environment
 
 ## License
 
-MIT License 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. 
