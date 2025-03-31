@@ -74,12 +74,42 @@ docker run -d --name kali-vnc-dev --gpus all -p 5901:5901 -p 4713:4713 --shm-siz
 
 ## Audio Configuration
 
-Audio is supported through PulseAudio:
-1. Install PulseAudio on your host system
-2. Start the PulseAudio TCP server on your host:
-```bash
-pulseaudio --load=module-native-protocol-tcp --exit-idle-time=-1 --daemon
-```
+Audio is supported through PulseAudio. For Windows hosts:
+
+1. Download and install PulseAudio for Windows:
+   - Download from: http://www.freedesktop.org/software/pulseaudio/misc/pulseaudio-1.1.zip
+   - Extract to `C:\Program Files\PulseAudio`
+   - Add `C:\Program Files\PulseAudio\bin` to your system PATH
+
+2. Create the PulseAudio configuration:
+   - Create directory: `%APPDATA%\pulse`
+   - Create two files:
+     
+     a. `%APPDATA%\pulse\daemon.conf`:
+     ```conf
+     exit-idle-time = -1
+     ```
+
+     b. `%APPDATA%\pulse\default.pa`:
+     ```conf
+     load-module module-native-protocol-tcp auth-anonymous=1
+     load-module module-esound-protocol-tcp auth-anonymous=1
+     load-module module-waveout
+     ```
+
+3. Start PulseAudio on Windows:
+   ```powershell
+   # Run in PowerShell as Administrator
+   cd "C:\Program Files\PulseAudio\bin"
+   .\pulseaudio.exe --start
+   ```
+
+4. Verify PulseAudio is running:
+   ```powershell
+   Get-Process pulseaudio
+   ```
+
+The container will automatically connect to the host's PulseAudio server on port 4713.
 
 ## NVIDIA GPU Support
 
