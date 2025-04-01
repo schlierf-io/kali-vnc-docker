@@ -1,178 +1,144 @@
-# Kali Linux VNC Docker Container
+# Kali Linux Development Environment
 
-A feature-rich Kali Linux container with VNC, development tools, and NVIDIA GPU support.
-
-## Features
-
-- Kali Linux desktop environment (XFCE)
-- VNC server for remote access
-- NVIDIA GPU support with CUDA toolkit
-- Development Tools:
-  - Node.js and npm (with global packages: yarn, pnpm)
-  - Java Development Kit (via SDKMAN!)
-  - Sublime Text 4
-  - JetBrains Toolbox
-  - Cursor AI IDE (via AppMan)
-  - Git and development essentials
-- ZSH with Oh My Zsh (theme: robbyrussell)
-- Audio support via PulseAudio
-- AppMan package manager for easy software installation
+A customized Kali Linux container with XFCE desktop, development tools, and audio/video support.
 
 ## Prerequisites
 
-- Docker installed and running
-- NVIDIA GPU with appropriate drivers (for GPU support)
-- NVIDIA Container Toolkit installed
-- VNC client installed on your system
+- Docker Desktop for Windows
+- NVIDIA GPU with updated drivers
+- NVIDIA Container Toolkit
+- VNC Viewer
+- MSYS2 (for audio support)
 
 ## Quick Start
 
-1. Build the container:
-```bash
-docker build -t kali-vnc .
-```
+1. **Clone and Build**:
 
-2. Run the container with GPU support:
-```bash
-docker run -d --name kali-vnc-dev --gpus all -p 5901:5901 -p 4713:4713 --shm-size 1g kali-vnc
-```
-
-3. Connect using a VNC client:
-   - Host: localhost or 127.0.0.1
-   - Port: 5901
-   - Password: kalidev
-
-## User Credentials
-
-- Username: kalidev
-- Password: kalidev
-
-## Development Environment
-
-### Text Editors and IDEs
-- **Sublime Text 4**: Modern text editor with extensive plugin support
-- **Cursor AI**: AI-powered IDE for enhanced development
-- **JetBrains Toolbox**: Install and manage JetBrains IDEs
-
-### Package Management
-- **AppMan**: Rootless package manager for easy software installation
-  - Install new applications: `appman -i <package-name>`
-  - List installed applications: `appman -l`
-  - Update all applications: `appman -u`
-  - For AppImages in Docker: `appman -i --appimage-extract-and-run <package-name>`
-    - This flag is required for applications like Cursor due to FUSE limitations in containers
-    - Extracts and runs AppImages without requiring FUSE support
-
-### Understanding FUSE and AppImages in Docker
-
-AppImages typically require FUSE (Filesystem in Userspace) to run. However, in Docker containers:
-
-1. Why FUSE is needed:
-   - AppImages are self-contained applications that mount themselves as filesystems
-   - FUSE allows these filesystem operations without root privileges
-   - Traditional AppImages create a virtual filesystem when executed
-
-2. Docker Container Limitations:
-   - FUSE requires special kernel capabilities
-   - Docker containers run with limited privileges by default
-   - Mounting filesystems inside containers poses security risks
-
-3. Our Solution:
-   - Use `--appimage-extract-and-run` flag
-   - This extracts the AppImage contents to a temporary directory
-   - Runs the application directly without mounting
-   - More secure and reliable in containerized environments
-
-4. When to use extraction:
-   - Always use `--appimage-extract-and-run` for AppImages in this container
-   - Examples: Cursor, and other AppImage-based applications
-   - No performance impact, just different execution method
-
-### Node.js Environment
-- Global packages pre-installed:
-  - yarn
-  - pnpm
-
-### Java Development
-- SDKMAN! installed for Java version management
-- Access via: `source "$HOME/.sdkman/bin/sdkman-init.sh"`
-
-## Audio Configuration
-
-Audio is supported through PulseAudio. For Windows hosts:
-
-1. Download and install PulseAudio for Windows:
-   - Download from: http://www.freedesktop.org/software/pulseaudio/misc/pulseaudio-1.1.zip
-   - Extract to `C:\Program Files\PulseAudio`
-   - Add `C:\Program Files\PulseAudio\bin` to your system PATH
-
-2. Create the PulseAudio configuration:
-   - Create directory: `%APPDATA%\pulse`
-   - Create two files:
-     
-     a. `%APPDATA%\pulse\daemon.conf`:
-     ```conf
-     daemonize = yes
-     exit-idle-time = -1
-     ```
-
-     b. `%APPDATA%\pulse\default.pa`:
-     ```conf
-     load-module module-waveout
-     load-module module-native-protocol-tcp auth-anonymous=1
-     ```
-
-3. Start PulseAudio on Windows:
    ```powershell
-   # Run in PowerShell as Administrator
-   cd "C:\Program Files\PulseAudio\bin"
-   .\pulseaudio.exe --start
+   git clone https://github.com/yourusername/kali-dev1.git
+   cd kali-dev1
+   docker build -t kalidev .
    ```
 
-4. Verify PulseAudio is running:
-   ```powershell
-   Get-Process pulseaudio
+2. **Setup Audio (Windows Host)**:
+
+   ```bash
+   # Install PulseAudio in MinGW64
+   pacman -S mingw-w64-x86_64-pulseaudio
+
+   # Configure PulseAudio
+   mkdir -p ~/.config/pulse
+   echo "default-server = 127.0.0.1
+   autospawn = yes
+   daemon-binary = /mingw64/bin/pulseaudio.exe
+   enable-shm = false" > ~/.config/pulse/client.conf
+
+   echo ".include /etc/pulse/default.pa
+   exit-idle-time = -1
+   daemonize = no
+   load-default-script-file = yes" > ~/.config/pulse/daemon.conf
+
+   # Create default.pa for module loading
+   mkdir -p ~/.config/pulse/default.pa.d
+   echo "load-module module-native-protocol-tcp
+   auth-anonymous=1 listen=0.0.0.0
+   load-module module-waveout" > ~/.config/pulse/default.pa.d/default.pa
+
+   # Start PulseAudio
+   taskkill /F /IM pulseaudio.exe 2>/dev/null
+   /mingw64/bin/pulseaudio.exe --exit-idle-time=-1 --verbose
+
    ```
 
-The container will automatically connect to the host's PulseAudio server on port 4713.
+3. **Run Container**:
 
-## NVIDIA GPU Support
+   ```powershell
+   docker run -d `
+     --name kalidev `
+     --gpus all `
+     -p 5901:5901 `
+     -p 4713:4713 `
+     --add-host=host.docker.internal:host-gateway `
+     -e PULSE_SERVER=tcp:host.docker.internal:4713 `
+     -e PULSE_COOKIE= `
+     --shm-size=2g `
+     kalidev
+   ```
 
-The container includes full NVIDIA GPU support with:
-- NVIDIA Container Toolkit
-- NVIDIA drivers
-- CUDA toolkit
-- VA-API configuration for hardware acceleration
+4. **Connect**:
+   - VNC: `localhost:5901` (no password)
+   - Terminal: `docker exec -it kalidev bash`
 
-To verify GPU support inside the container:
+## Features
+
+### Development Tools
+
+- Node.js 20.x (with npm, yarn, pnpm)
+- Java 21 (via SDKMAN)
+- Maven 3.9.9 and Gradle 8.13
+- Git and Sublime Text
+- JetBrains Toolbox
+- Cursor IDE
+
+### System
+
+- Kali Linux with XFCE desktop
+- VNC server for remote access
+- PulseAudio for audio support
+- NVIDIA GPU acceleration
+- Shared memory optimization
+
+## Troubleshooting
+
+### Audio Issues
+
 ```bash
-nvidia-smi
+# Check PulseAudio status
+/mingw64/bin/pulseaudio.exe --check
+
+# Reset configuration if needed
+rm -rf ~/.config/pulse/*
+rm -rf /c/msys64/mingw64/etc/pulse/default.pa.d/*
+
+# Restart with debug output
+/mingw64/bin/pulseaudio.exe -k
+/mingw64/bin/pulseaudio.exe --start --verbose --log-level=debug
+
+# Test in container
+docker exec -it kalidev pactl info
 ```
 
-## VNC Client Settings
+### Container Issues
 
-For optimal performance:
-- Color depth: 24-bit
-- Encoding: Tight
-- Quality: High (when available)
-- Enable clipboard sharing
+```powershell
+# View logs
+docker logs kalidev
 
-## Security Notes
+# Quick restart
+docker restart kalidev
 
-1. VNC connection is not encrypted by default. For production use:
-   - Use SSH tunneling
-   - Set up VPN
-   - Change default passwords
+# Full rebuild
+docker stop kalidev
+docker rm kalidev
+docker rmi kalidev
+docker build -t kalidev .
+```
 
-2. Container security:
-   - Runs as non-root user (kalidev)
-   - Limited system access
-   - Isolated environment
+## Configuration
 
-## License
+### Default Credentials
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- Username: `kalidev`
+- Password: `kalidev`
+- sudo: Yes (no password)
+
+### Environment Variables
+
+- `PULSE_SERVER`: tcp:host.docker.internal:4713
+- `PULSE_COOKIE`: (empty for anonymous auth)
+- `NVIDIA_VISIBLE_DEVICES`: all
+- `NVIDIA_DRIVER_CAPABILITIES`: all
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. 
+Issues and enhancement requests are welcome! Please check existing issues before submitting new ones.

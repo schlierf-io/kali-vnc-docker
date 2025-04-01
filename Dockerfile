@@ -219,16 +219,26 @@ done' > /home/kalidev/.config/tigervnc/xstartup && \
     chmod +x /home/kalidev/.config/tigervnc/xstartup && \
     chown kalidev:kalidev /home/kalidev/.config/tigervnc/xstartup
 
-# Configure PulseAudio for network access
+# Configure PulseAudio for high-performance network access
 RUN mkdir -p /home/kalidev/.config/pulse && \
+    mkdir -p /run/pulse && \
+    chown -R kalidev:kalidev /run/pulse && \
     echo "default-server = tcp:host.docker.internal:4713\n\
-# Prevent a server running in the container\n\
-autospawn = no\n\
-daemon-binary = /bin/true\n\
-# Enable TCP streaming\n\
-enable-shm = false\n\
-# Enable TCP protocol\n\
-protocol-native = true" > /home/kalidev/.config/pulse/client.conf && \
+    # Performance optimizations\n\
+    autospawn = no\n\
+    daemon-binary = /bin/true\n\
+    enable-shm = false\n\
+    protocol-native = true\n\
+    # Low-latency settings\n\
+    default-fragments = 8\n\
+    default-fragment-size-msec = 5\n\
+    # Client configuration\n\
+    cookie-file = /tmp/pulse_cookie\n\
+    # High-quality audio\n\
+    default-sample-format = s24le\n\
+    default-sample-rate = 48000\n\
+    avoid-resampling = true\n\
+    resample-method = speex-float-3" > /home/kalidev/.config/pulse/client.conf && \
     chown -R kalidev:kalidev /home/kalidev/.config/pulse
 
 # Expose VNC and PulseAudio ports
@@ -241,9 +251,19 @@ WORKDIR /home/kalidev
 # Start VNC server with dynamic scaling support
 CMD ["sh", "-c", "vncserver :1 -geometry 1920x1080 -depth 24 -SecurityTypes None -rfbport 5901 -localhost no --I-KNOW-THIS-IS-INSECURE -fg"]
 
-# Set environment variables for Mesa
-ENV LIBGL_ALWAYS_SOFTWARE=1
-ENV GALLIUM_DRIVER=llvmpipe
-ENV MESA_GL_VERSION_OVERRIDE=4.5
-ENV MESA_GLSL_VERSION_OVERRIDE=450
-ENV MESA_LOADER_DRIVER_OVERRIDE=kms_swrast
+# Set environment variables for high-performance audio
+ENV PULSE_SERVER=tcp:host.docker.internal:4713
+ENV PULSE_COOKIE=/tmp/pulse_cookie
+ENV PULSE_LATENCY_MSEC=20
+ENV PULSE_PROP="filter.want=echo-cancel"
+
+# Remove software rendering environment variables
+ENV LIBGL_ALWAYS_SOFTWARE=
+ENV GALLIUM_DRIVER=
+ENV MESA_GL_VERSION_OVERRIDE=
+ENV MESA_GLSL_VERSION_OVERRIDE=
+ENV MESA_LOADER_DRIVER_OVERRIDE=
+
+# Add NVIDIA paths
+ENV PATH=/usr/local/nvidia/bin:${PATH}
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib64:/usr/local/nvidia/lib:${LD_LIBRARY_PATH:-}
