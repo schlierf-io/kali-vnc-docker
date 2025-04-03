@@ -37,7 +37,6 @@ RUN apt-get update && apt-get install -y \
     pulseaudio \
     pavucontrol \
     software-properties-common \
-    zsh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Sublime Text
@@ -56,7 +55,7 @@ ENV LIBVA_DRIVER_NAME=nvidia
 ENV LIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
 
 # Create kalidev user and add to sudo group
-RUN useradd -m -s /usr/bin/zsh kalidev && \
+RUN useradd -m -s /bin/bash kalidev && \
     echo "kalidev:kalidev" | chpasswd && \
     adduser kalidev sudo && \
     echo "kalidev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -161,23 +160,14 @@ ENV NPM_CONFIG_PREFIX=/home/kalidev/.npm-global
 ENV PATH=/home/kalidev/.npm-global/bin:${PATH}
 RUN mkdir -p /home/kalidev/.npm-global && \
     npm config set prefix '/home/kalidev/.npm-global' && \
-    echo 'export NPM_CONFIG_PREFIX=/home/kalidev/.npm-global' >> /home/kalidev/.zshrc && \
-    echo 'export PATH="/home/kalidev/.npm-global/bin:$PATH"' >> /home/kalidev/.zshrc && \
+    echo 'export NPM_CONFIG_PREFIX=/home/kalidev/.npm-global' >> /home/kalidev/.bashrc && \
+    echo 'export PATH="/home/kalidev/.npm-global/bin:$PATH"' >> /home/kalidev/.bashrc && \
     npm install -g yarn && \
     npm install -g pnpm
 
-# Install Oh My Zsh and configure ZSH for kalidev
-RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended && \
-    echo 'export ZSH="/home/kalidev/.oh-my-zsh"\n\
-ZSH_THEME="agnoster"\n\
-plugins=(git)\n\
-setopt no_nomatch\n\
-source $ZSH/oh-my-zsh.sh' > /home/kalidev/.zshrc && \
-    echo 'source "/home/kalidev/.sdkman/bin/sdkman-init.sh"' >> /home/kalidev/.zshrc
-
 # Install SDKMAN! for kalidev user
 RUN bash -c "curl -s 'https://get.sdkman.io' | bash" && \
-    echo 'source "/home/kalidev/.sdkman/bin/sdkman-init.sh"' >> /home/kalidev/.zshrc && \
+    echo 'source "/home/kalidev/.sdkman/bin/sdkman-init.sh"' >> /home/kalidev/.bashrc && \
     bash -c 'source "/home/kalidev/.sdkman/bin/sdkman-init.sh" && \
     export SDKMAN_DIR="/home/kalidev/.sdkman" && \
     [[ -s "/home/kalidev/.sdkman/bin/sdkman-init.sh" ]] && \
@@ -206,8 +196,7 @@ export LIBGL_ALWAYS_SOFTWARE=1\n\
 export XKL_XMODMAP_DISABLE=1\n\
 export XDG_CURRENT_DESKTOP="XFCE"\n\
 export XDG_MENU_PREFIX="xfce-"\n\
-# Start PulseAudio in daemon mode\n\
-pulseaudio --start --exit-idle-time=-1 &\n\
+# Do not start PulseAudio daemon as we use WSLg socket\n\
 xrdb $HOME/.Xresources\n\
 xsetroot -solid grey\n\
 /usr/bin/startxfce4 --replace > /dev/null 2>&1 &\n\
@@ -219,21 +208,19 @@ done' > /home/kalidev/.config/tigervnc/xstartup && \
     chmod +x /home/kalidev/.config/tigervnc/xstartup && \
     chown kalidev:kalidev /home/kalidev/.config/tigervnc/xstartup
 
-# Configure PulseAudio for high-performance network access
+# Configure PulseAudio to use WSLg
 RUN mkdir -p /home/kalidev/.config/pulse && \
     mkdir -p /run/pulse && \
     chown -R kalidev:kalidev /run/pulse && \
-    echo "default-server = tcp:host.docker.internal:4713\n\
+    echo "# Use WSLg PulseAudio socket\n\
+    default-server = unix:/mnt/wslg/PulseServer\n\
     # Performance optimizations\n\
     autospawn = no\n\
     daemon-binary = /bin/true\n\
     enable-shm = false\n\
-    protocol-native = true\n\
     # Low-latency settings\n\
     default-fragments = 8\n\
     default-fragment-size-msec = 5\n\
-    # Client configuration\n\
-    cookie-file = /tmp/pulse_cookie\n\
     # High-quality audio\n\
     default-sample-format = s24le\n\
     default-sample-rate = 48000\n\
@@ -251,9 +238,8 @@ WORKDIR /home/kalidev
 # Start VNC server with dynamic scaling support
 CMD ["sh", "-c", "vncserver :1 -geometry 1920x1080 -depth 24 -SecurityTypes None -rfbport 5901 -localhost no --I-KNOW-THIS-IS-INSECURE -fg"]
 
-# Set environment variables for high-performance audio
-ENV PULSE_SERVER=tcp:host.docker.internal:4713
-ENV PULSE_COOKIE=/tmp/pulse_cookie
+# Set environment variables for WSLg audio
+ENV PULSE_SERVER=unix:/mnt/wslg/PulseServer
 ENV PULSE_LATENCY_MSEC=20
 ENV PULSE_PROP="filter.want=echo-cancel"
 
