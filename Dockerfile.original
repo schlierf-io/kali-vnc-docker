@@ -143,12 +143,12 @@ RUN nvidia-ctk runtime configure --runtime=docker
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 
-# Set software rendering environment variables with valid values
-ENV LIBGL_ALWAYS_SOFTWARE=0
-ENV GALLIUM_DRIVER=llvmpipe
-ENV MESA_GL_VERSION_OVERRIDE=4.5
-ENV MESA_GLSL_VERSION_OVERRIDE=450
-ENV MESA_LOADER_DRIVER_OVERRIDE=iris
+# Remove software rendering environment variables
+ENV LIBGL_ALWAYS_SOFTWARE=
+ENV GALLIUM_DRIVER=
+ENV MESA_GL_VERSION_OVERRIDE=
+ENV MESA_GLSL_VERSION_OVERRIDE=
+ENV MESA_LOADER_DRIVER_OVERRIDE=
 
 # Add NVIDIA paths
 ENV PATH=/usr/local/nvidia/bin:${PATH}
@@ -196,8 +196,7 @@ export LIBGL_ALWAYS_SOFTWARE=1\n\
 export XKL_XMODMAP_DISABLE=1\n\
 export XDG_CURRENT_DESKTOP="XFCE"\n\
 export XDG_MENU_PREFIX="xfce-"\n\
-# Start PulseAudio in daemon mode\n\
-pulseaudio --start --exit-idle-time=-1 &\n\
+# Do not start PulseAudio daemon as we use WSLg socket\n\
 xrdb $HOME/.Xresources\n\
 xsetroot -solid grey\n\
 /usr/bin/startxfce4 --replace > /dev/null 2>&1 &\n\
@@ -209,22 +208,19 @@ done' > /home/kalidev/.config/tigervnc/xstartup && \
     chmod +x /home/kalidev/.config/tigervnc/xstartup && \
     chown kalidev:kalidev /home/kalidev/.config/tigervnc/xstartup
 
-# Configure PulseAudio for network access from Windows
+# Configure PulseAudio to use WSLg
 RUN mkdir -p /home/kalidev/.config/pulse && \
     mkdir -p /run/pulse && \
     chown -R kalidev:kalidev /run/pulse && \
-    echo "# Connect to Windows host via TCP\n\
-    default-server = tcp:host.docker.internal:4713\n\
+    echo "# Use WSLg PulseAudio socket\n\
+    default-server = unix:/mnt/wslg/PulseServer\n\
     # Performance optimizations\n\
     autospawn = no\n\
     daemon-binary = /bin/true\n\
     enable-shm = false\n\
-    protocol-native = true\n\
     # Low-latency settings\n\
     default-fragments = 8\n\
     default-fragment-size-msec = 5\n\
-    # Client configuration\n\
-    cookie-file = /tmp/pulse_cookie\n\
     # High-quality audio\n\
     default-sample-format = s24le\n\
     default-sample-rate = 48000\n\
@@ -242,18 +238,17 @@ WORKDIR /home/kalidev
 # Start VNC server with dynamic scaling support
 CMD ["sh", "-c", "vncserver :1 -geometry 1920x1080 -depth 24 -SecurityTypes None -rfbport 5901 -localhost no --I-KNOW-THIS-IS-INSECURE -fg"]
 
-# Set environment variables for Windows host audio
-ENV PULSE_SERVER=tcp:host.docker.internal:4713
-ENV PULSE_COOKIE=/tmp/pulse_cookie
+# Set environment variables for WSLg audio
+ENV PULSE_SERVER=unix:/mnt/wslg/PulseServer
 ENV PULSE_LATENCY_MSEC=20
 ENV PULSE_PROP="filter.want=echo-cancel"
 
-# Set software rendering environment variables with valid values
-ENV LIBGL_ALWAYS_SOFTWARE=0
-ENV GALLIUM_DRIVER=llvmpipe
-ENV MESA_GL_VERSION_OVERRIDE=4.5
-ENV MESA_GLSL_VERSION_OVERRIDE=450
-ENV MESA_LOADER_DRIVER_OVERRIDE=iris
+# Remove software rendering environment variables
+ENV LIBGL_ALWAYS_SOFTWARE=
+ENV GALLIUM_DRIVER=
+ENV MESA_GL_VERSION_OVERRIDE=
+ENV MESA_GLSL_VERSION_OVERRIDE=
+ENV MESA_LOADER_DRIVER_OVERRIDE=
 
 # Add NVIDIA paths
 ENV PATH=/usr/local/nvidia/bin:${PATH}

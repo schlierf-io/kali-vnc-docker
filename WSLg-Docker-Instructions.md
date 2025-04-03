@@ -31,13 +31,31 @@ To use WSLg audio with your Docker container, you need to run the Docker command
    docker run -d --name kali-vnc \
      -p 5901:5901 \
      -v /mnt/wslg:/mnt/wslg \
-     --security-opt apparmor=unconfined \
+     -v /mnt/c:/windows/c \
+      --security-opt apparmor=unconfined \
      kali-vnc-wslg
    ```
 
 5. **Connect to the VNC server**
 
    Use a VNC client to connect to `localhost:5901` (password: `kalidev`)
+
+## Mounting Windows Drives
+
+If you want to access your Windows files from within the container, you can mount Windows drives or specific folders.
+
+For detailed instructions and examples, see [Mount-Windows-Drives.md](Mount-Windows-Drives.md).
+
+Example with C: drive mounted:
+
+```bash
+docker run -d --name kali-vnc \
+  -p 5901:5901 \
+  -v /mnt/wslg:/mnt/wslg \
+  -v /mnt/c:/windows/c \
+  --security-opt apparmor=unconfined \
+  kali-vnc-wslg
+```
 
 ## Why This Works
 

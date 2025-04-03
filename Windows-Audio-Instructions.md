@@ -64,6 +64,21 @@ Run this batch file to start the PulseAudio server.
 
 3. Connect to the VNC server using a VNC client at `localhost:5901` (password: `kalidev`)
 
+## Mounting Windows Drives
+
+If you want to access your Windows files from within the container, you can mount Windows drives or specific folders.
+
+For detailed instructions and examples, see [Mount-Windows-Drives.md](Mount-Windows-Drives.md).
+
+Example with C: drive mounted:
+
+```powershell
+docker run -d --name kali-vnc `
+  -p 5901:5901 `
+  -v "C:\:/windows/c" `
+  kali-vnc-windows
+```
+
 ## Testing Audio
 
 Once connected to the VNC session, you can test audio with:

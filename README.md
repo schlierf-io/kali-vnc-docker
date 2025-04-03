@@ -1,144 +1,105 @@
-# Kali Linux Development Environment
+# Kali Linux VNC Docker Container
 
-A customized Kali Linux container with XFCE desktop, development tools, and audio/video support.
+This repository contains Docker configurations for running Kali Linux with a VNC server, allowing you to access a full Kali Linux desktop environment remotely.
 
-## Prerequisites
+## Two Approaches for Running the Container
 
-- Docker Desktop for Windows
-- NVIDIA GPU with updated drivers
-- NVIDIA Container Toolkit
-- VNC Viewer
-- MSYS2 (for audio support)
+There are two ways to run this container, depending on your environment:
 
-## Quick Start
+1. **WSLg Approach** (Recommended for Windows 11 with WSL2)
+2. **Windows PulseAudio Approach** (For running directly from Windows PowerShell/CMD)
 
-1. **Clone and Build**:
+## Recent Fixes
 
-   ```powershell
-   git clone https://github.com/yourusername/kali-dev1.git
-   cd kali-dev1
-   docker build -t kalidev .
-   ```
+The following issues have been fixed in the latest version:
 
-2. **Setup Audio (Windows Host)**:
+1. **DBus Connection Errors**: Fixed by properly mounting the DBus socket from the host
+2. **MESA GL Version Override Errors**: Fixed by setting valid values for MESA environment variables
 
+## Running with WSLg (Recommended)
+
+This approach provides better performance, especially for audio. You must run Docker commands from within WSL2.
+
+### Steps:
+
+1. Open a WSL2 terminal
+2. Navigate to the project directory:
    ```bash
-   # Install PulseAudio in MinGW64
-   pacman -S mingw-w64-x86_64-pulseaudio
-
-   # Configure PulseAudio
-   mkdir -p ~/.config/pulse
-   echo "default-server = 127.0.0.1
-   autospawn = yes
-   daemon-binary = /mingw64/bin/pulseaudio.exe
-   enable-shm = false" > ~/.config/pulse/client.conf
-
-   echo ".include /etc/pulse/default.pa
-   exit-idle-time = -1
-   daemonize = no
-   load-default-script-file = yes" > ~/.config/pulse/daemon.conf
-
-   # Create default.pa for module loading
-   mkdir -p ~/.config/pulse/default.pa.d
-   echo "load-module module-native-protocol-tcp
-   auth-anonymous=1 listen=0.0.0.0
-   load-module module-waveout" > ~/.config/pulse/default.pa.d/default.pa
-
-   # Start PulseAudio
-   taskkill /F /IM pulseaudio.exe 2>/dev/null
-   /mingw64/bin/pulseaudio.exe --exit-idle-time=-1 --verbose
-
+   cd /mnt/c/projects/kali-vnc-docker
+   ```
+3. Run the provided script:
+   ```bash
+   ./run-kali-vnc-wslg.sh
    ```
 
-3. **Run Container**:
+This script will:
+- Build the Docker image
+- Run the container with proper mounts for WSLg and DBus
+- Mount your C: drive to /windows/c in the container
+- Expose port 5901 for VNC access
 
+### Manual Command:
+
+If you prefer to run the command manually:
+
+```bash
+docker build -t kali-vnc-wslg .
+
+docker run -d --name kali-vnc \
+  -p 5901:5901 \
+  -v /mnt/wslg:/mnt/wslg \
+  -v /run/dbus:/run/dbus \
+  -v /mnt/c:/windows/c \
+  --security-opt apparmor=unconfined \
+  kali-vnc-wslg
+```
+
+## Running from Windows PowerShell/CMD
+
+This approach allows you to run Docker commands directly from Windows.
+
+### Steps:
+
+1. Install PulseAudio on Windows (see Windows-Audio-Instructions.md)
+2. Run the provided PowerShell script:
    ```powershell
-   docker run -d `
-     --name kalidev `
-     --gpus all `
-     -p 5901:5901 `
-     -p 4713:4713 `
-     --add-host=host.docker.internal:host-gateway `
-     -e PULSE_SERVER=tcp:host.docker.internal:4713 `
-     -e PULSE_COOKIE= `
-     --shm-size=2g `
-     kalidev
+   .\run-kali-vnc-windows.ps1
    ```
 
-4. **Connect**:
-   - VNC: `localhost:5901` (no password)
-   - Terminal: `docker exec -it kalidev bash`
+This script will:
+- Build the Docker image using Dockerfile.windows
+- Run the container with proper environment variables
+- Mount your C: drive to /windows/c in the container
+- Expose port 5901 for VNC access
 
-## Features
+### Manual Command:
 
-### Development Tools
+If you prefer to run the command manually:
 
-- Node.js 20.x (with npm, yarn, pnpm)
-- Java 21 (via SDKMAN)
-- Maven 3.9.9 and Gradle 8.13
-- Git and Sublime Text
-- JetBrains Toolbox
-- Cursor IDE
+```powershell
+docker build -t kali-vnc-windows -f Dockerfile.windows .
 
-### System
+docker run -d --name kali-vnc `
+  -p 5901:5901 `
+  -v "C:\:/windows/c" `
+  -e "MESA_GL_VERSION_OVERRIDE=4.5" `
+  -e "MESA_GLSL_VERSION_OVERRIDE=450" `
+  kali-vnc-windows
+```
 
-- Kali Linux with XFCE desktop
-- VNC server for remote access
-- PulseAudio for audio support
-- NVIDIA GPU acceleration
-- Shared memory optimization
+## Connecting to the VNC Server
+
+Regardless of which approach you use:
+
+1. Use a VNC client to connect to `localhost:5901`
+2. Use the password: `kalidev`
 
 ## Troubleshooting
 
-### Audio Issues
+If you encounter issues:
 
-```bash
-# Check PulseAudio status
-/mingw64/bin/pulseaudio.exe --check
+1. **DBus Errors**: Make sure you're mounting the DBus socket correctly if using WSLg
+2. **Audio Issues**: Follow the appropriate guide (WSLg-Docker-Instructions.md or Windows-Audio-Instructions.md)
+3. **MESA GL Errors**: The Dockerfiles now set valid values for these variables, but you can also override them when running the container
 
-# Reset configuration if needed
-rm -rf ~/.config/pulse/*
-rm -rf /c/msys64/mingw64/etc/pulse/default.pa.d/*
-
-# Restart with debug output
-/mingw64/bin/pulseaudio.exe -k
-/mingw64/bin/pulseaudio.exe --start --verbose --log-level=debug
-
-# Test in container
-docker exec -it kalidev pactl info
-```
-
-### Container Issues
-
-```powershell
-# View logs
-docker logs kalidev
-
-# Quick restart
-docker restart kalidev
-
-# Full rebuild
-docker stop kalidev
-docker rm kalidev
-docker rmi kalidev
-docker build -t kalidev .
-```
-
-## Configuration
-
-### Default Credentials
-
-- Username: `kalidev`
-- Password: `kalidev`
-- sudo: Yes (no password)
-
-### Environment Variables
-
-- `PULSE_SERVER`: tcp:host.docker.internal:4713
-- `PULSE_COOKIE`: (empty for anonymous auth)
-- `NVIDIA_VISIBLE_DEVICES`: all
-- `NVIDIA_DRIVER_CAPABILITIES`: all
-
-## Contributing
-
-Issues and enhancement requests are welcome! Please check existing issues before submitting new ones.
+For more detailed information, see the other documentation files in this repository.
