@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     ca-certificates \
     pulseaudio \
+    pulseaudio-utils \
     pavucontrol \
     software-properties-common \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -104,6 +105,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvdpau1 && \
     rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y \
+    libasound2-dev \
+    libpulse-dev \
+    libdbus-1-dev \
+    libglib2.0-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create required directories for AppMan and install it
 RUN mkdir -p /home/kalidev/.local/bin && \
     mkdir -p /home/kalidev/.config/appman && \
@@ -123,7 +131,7 @@ RUN mkdir -p /home/kalidev/.local/bin && \
 USER kalidev
 ENV PATH=/home/kalidev/.local/bin:${PATH}
 RUN echo "/home/kalidev/Applications" | appman && \
-    appman -i --appimage-extract-and-run cursor
+    appman -ia --appimage-extract-and-run cursor
 
 # Switch back to root for remaining installations
 USER root
@@ -148,7 +156,9 @@ ENV LIBGL_ALWAYS_SOFTWARE=0
 ENV GALLIUM_DRIVER=llvmpipe
 ENV MESA_GL_VERSION_OVERRIDE=4.5
 ENV MESA_GLSL_VERSION_OVERRIDE=450
-ENV MESA_LOADER_DRIVER_OVERRIDE=iris
+ENV MESA_LOADER_DRIVER_OVERRIDE=ir
+
+ENV APPIMAGE_EXTRACT_AND_RUN=1
 
 # Add NVIDIA paths
 ENV PATH=/usr/local/nvidia/bin:${PATH}
@@ -218,14 +228,34 @@ RUN mkdir -p /home/kalidev/.config/pulse && \
     autospawn = no\n\
     daemon-binary = /bin/true\n\
     enable-shm = false\n\
-    # Low-latency settings\n\
+    # Improved audio quality settings\n\
+    default-sample-format = float32le\n\
+    default-sample-rate = 48000\n\
+    alternate-sample-rate = 44100\n\
     default-fragments = 8\n\
     default-fragment-size-msec = 5\n\
-    # High-quality audio\n\
-    default-sample-format = s24le\n\
-    default-sample-rate = 48000\n\
+    resample-method = soxr-vhq\n\
     avoid-resampling = true\n\
-    resample-method = speex-float-3" > /home/kalidev/.config/pulse/client.conf && \
+    remixing-produce-lfe = no\n\
+    remixing-consume-lfe = no\n\
+    lfe-crossover-freq = 0\n\
+    # Additional quality improvements\n\
+    high-priority = yes\n\
+    nice-level = -11\n\
+    realtime-scheduling = yes\n\
+    realtime-priority = 5\n\
+    rlimit-rtprio = 9\n\
+    default-fragment-size-msec = 5\n\
+    default-fragments = 8\n\
+    default-sample-channels = 2\n\
+    default-channel-map = front-left,front-right\n\
+    default-volume = 65536\n\
+    enable-lfe-remixing = no\n\
+    enable-remixing = yes\n\
+    enable-deferred-volume = yes\n\
+    flat-volumes = no\n\
+    log-target = stderr\n\
+    log-level = notice" > /home/kalidev/.config/pulse/client.conf && \
     chown -R kalidev:kalidev /home/kalidev/.config/pulse
 
 # Expose VNC and PulseAudio ports
@@ -240,8 +270,9 @@ CMD ["sh", "-c", "vncserver :1 -geometry 1920x1080 -depth 24 -SecurityTypes None
 
 # Set environment variables for WSLg audio
 ENV PULSE_SERVER=unix:/mnt/wslg/PulseServer
-ENV PULSE_LATENCY_MSEC=20
+ENV PULSE_LATENCY_MSEC=5
 ENV PULSE_PROP="filter.want=echo-cancel"
+ENV PULSE_CLIENTCONFIG=/home/kalidev/.config/pulse/client.conf
 
 # Set software rendering environment variables with valid values
 ENV LIBGL_ALWAYS_SOFTWARE=0

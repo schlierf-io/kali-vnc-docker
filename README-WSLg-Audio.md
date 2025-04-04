@@ -27,9 +27,11 @@ This guide explains how to use WSLg (Windows Subsystem for Linux GUI) as a sound
    ```bash
    docker run -d --name kali-vnc \
      -p 5901:5901 \
+     -v /run/dbus:/run/dbus \
      -v /mnt/wslg:/mnt/wslg \
+     -v "C:\:/windows/c" `
      --security-opt apparmor=unconfined \
-     kali-vnc-wslg
+     kali-vnc-wslg 
    ```
 
    The important parts are:
